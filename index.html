@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>숏폼 스튜디오 대시보드 클릭 영역 분석</title>
+</head>
+<body>
+<div id="dashboard-clickmap">
+  <style>
+    #dashboard-clickmap {
+      --bg: #f3f1ee;
+      --ink: #222;
+      --muted: #74706b;
+      --line: #ddd8d2;
+      --panel: #fff;
+      --soft: #faf8f5;
+      --accent: #ff6b35;
+      --accent2: #2f80ed;
+      --accent3: #111;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      padding: 28px;
+      border-radius: 18px;
+    }
+    #dashboard-clickmap * { box-sizing: border-box; }
+    #dashboard-clickmap .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-end;
+      margin-bottom: 20px;
+    }
+    #dashboard-clickmap h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    #dashboard-clickmap .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    #dashboard-clickmap .summary {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    #dashboard-clickmap .pill {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    #dashboard-clickmap .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0 16px;
+    }
+    #dashboard-clickmap button {
+      font: inherit;
+      cursor: pointer;
+    }
+    #dashboard-clickmap .tab {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 9px 13px;
+      color: var(--ink);
+    }
+    #dashboard-clickmap .tab[aria-selected="true"] {
+      background: var(--accent3);
+      border-color: var(--accent3);
+      color: #fff;
+    }
+    #dashboard-clickmap .stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+      gap: 18px;
+      align-items: start;
+    }
+    #dashboard-clickmap .screen-wrap,
+    #dashboard-clickmap .side-panel,
+    #dashboard-clickmap .data-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+    #dashboard-clickmap .screen-wrap {
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    #dashboard-clickmap .screen-frame {
+      position: relative;
+      width: 100%;
+      line-height: 0;
+      background: #eee;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #dashboard-clickmap .screen-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    #dashboard-clickmap .hotspot {
+      position: absolute;
+      border: 2px solid rgba(255,107,53,.95);
+      background: rgba(255,107,53,.14);
+      border-radius: 10px;
+      min-width: 18px;
+      min-height: 18px;
+      transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
+    }
+    #dashboard-clickmap .hotspot:hover,
+    #dashboard-clickmap .hotspot:focus-visible,
+    #dashboard-clickmap .hotspot.is-active {
+      outline: none;
+      background: rgba(255,107,53,.27);
+      border-color: #ff4f17;
+      box-shadow: 0 0 0 4px rgba(255,107,53,.18);
+      z-index: 4;
+    }
+    #dashboard-clickmap .hotspot .badge {
+      position: absolute;
+      top: -13px;
+      right: -10px;
+      line-height: 1;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 999px;
+      padding: 5px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0,0,0,.16);
+      white-space: nowrap;
+    }
+    #dashboard-clickmap .tooltip {
+      position: fixed;
+      z-index: 30;
+      max-width: 260px;
+      background: rgba(20,20,20,.96);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .12s ease, transform .12s ease;
+    }
+    #dashboard-clickmap .tooltip.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #dashboard-clickmap .tooltip strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+    #dashboard-clickmap .tooltip-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    #dashboard-clickmap .tooltip-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+    #dashboard-clickmap .tooltip-dot.total { background: var(--accent3); }
+    #dashboard-clickmap .tooltip-dot.uv { background: var(--accent2); }
+    #dashboard-clickmap .tooltip-dot.event { background: var(--accent); }
+    #dashboard-clickmap .side-panel {
+      padding: 16px;
+    }
+    #dashboard-clickmap .side-panel h2,
+    #dashboard-clickmap .data-panel h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+    #dashboard-clickmap .selected {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    #dashboard-clickmap .selected .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    #dashboard-clickmap .selected .name {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    #dashboard-clickmap .selected .value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+    #dashboard-clickmap .selected .subvalue {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    #dashboard-clickmap .rank-list {
+      display: grid;
+      gap: 9px;
+    }
+    #dashboard-clickmap .rank-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    #dashboard-clickmap .rank-item:last-child {
+      border-bottom: 0;
+    }
+    #dashboard-clickmap .rank-name {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    #dashboard-clickmap .rank-value {
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    #dashboard-clickmap .rank-total {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: -4px;
+    }
+    #dashboard-clickmap .bar {
+      grid-column: 1 / -1;
+      height: 7px;
+      background: #ece8e2;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    #dashboard-clickmap .bar span {
+      display: block;
+      height: 100%;
+      width: var(--w);
+      background: var(--accent2);
+      border-radius: inherit;
+    }
+    #dashboard-clickmap .data-panel {
+      margin-top: 18px;
+      padding: 18px;
+    }
+    #dashboard-clickmap .bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+      gap: 18px;
+    }
+    #dashboard-clickmap .bottom-grid.event-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    #dashboard-clickmap .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    #dashboard-clickmap .text-muted {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    #dashboard-clickmap th,
+    #dashboard-clickmap td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    #dashboard-clickmap th {
+      color: var(--muted);
+      font-weight: 700;
+      background: var(--soft);
+    }
+    #dashboard-clickmap td:last-child,
+    #dashboard-clickmap th:last-child {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    #dashboard-clickmap .chart {
+      display: grid;
+      gap: 8px;
+      padding-top: 2px;
+    }
+    #dashboard-clickmap .day-row {
+      display: grid;
+      grid-template-columns: 88px 1fr 130px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+    #dashboard-clickmap .day-track {
+      height: 18px;
+      background: #ece8e2;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    #dashboard-clickmap .day-track span {
+      display: block;
+      height: 100%;
+      width: var(--w);
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      border-radius: inherit;
+    }
+    #dashboard-clickmap .note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    #dashboard-clickmap .notification-trend {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    #dashboard-clickmap .hook-copy {
+      margin: 10px 0 8px;
+      font-size: 20px;
+      line-height: 1.35;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+    #dashboard-clickmap .one-line-summary {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    #dashboard-clickmap .trend-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+    #dashboard-clickmap .trend-head h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+    #dashboard-clickmap .trend-kpi {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    #dashboard-clickmap .trend-kpi span {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    #dashboard-clickmap .month-status {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    #dashboard-clickmap .month-card {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    #dashboard-clickmap .month-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    #dashboard-clickmap .month-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    #dashboard-clickmap .notification-chart {
+      width: 100%;
+      min-height: 280px;
+    }
+    #dashboard-clickmap .notification-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 210px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+    #dashboard-clickmap .notification-track {
+      height: 22px;
+      background: #ece8e2;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    #dashboard-clickmap .notification-track span {
+      display: block;
+      height: 100%;
+      width: var(--w);
+      background: linear-gradient(90deg, var(--accent3), var(--accent));
+      border-radius: inherit;
+    }
+    #dashboard-clickmap .delta {
+      color: var(--muted);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    #dashboard-clickmap .trend-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible;
+    }
+    #dashboard-clickmap .trend-axis,
+    #dashboard-clickmap .trend-grid {
+      stroke: #d8d2ca;
+      stroke-width: 1;
+    }
+    #dashboard-clickmap .trend-line-clicks {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    #dashboard-clickmap .trend-line-uv {
+      fill: none;
+      stroke: var(--accent2);
+      stroke-width: 2.5;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    #dashboard-clickmap .trend-line-total {
+      fill: none;
+      stroke: var(--accent3);
+      stroke-width: 2.5;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+      opacity: .72;
+    }
+    #dashboard-clickmap .trend-update {
+      stroke: var(--accent3);
+      stroke-width: 2;
+      stroke-dasharray: 5 5;
+    }
+    #dashboard-clickmap .trend-label,
+    #dashboard-clickmap .trend-tick {
+      fill: var(--muted);
+      font-size: 11px;
+    }
+    #dashboard-clickmap .trend-point {
+      fill: var(--panel);
+      stroke: var(--accent);
+      stroke-width: 2;
+    }
+    #dashboard-clickmap .trend-hit {
+      fill: transparent;
+      stroke: transparent;
+      cursor: pointer;
+    }
+    #dashboard-clickmap .trend-hit:hover {
+      fill: rgba(47,128,237,.08);
+    }
+    #dashboard-clickmap .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    #dashboard-clickmap .compare-card {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    #dashboard-clickmap .compare-period {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+    #dashboard-clickmap .compare-card strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+    #dashboard-clickmap .compare-caption {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      margin-bottom: 6px;
+    }
+    #dashboard-clickmap .compare-card .big {
+      display: block;
+      color: var(--ink);
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+    #dashboard-clickmap .compare-card .big-secondary {
+      display: block;
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+    #dashboard-clickmap .os-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 16px;
+    }
+    #dashboard-clickmap .os-chart {
+      display: grid;
+      gap: 11px;
+    }
+    #dashboard-clickmap .os-row {
+      display: grid;
+      grid-template-columns: 78px 1fr 126px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+    #dashboard-clickmap .os-track {
+      height: 20px;
+      background: #ece8e2;
+      border-radius: 999px;
+      overflow: hidden;
+      display: flex;
+    }
+    #dashboard-clickmap .os-track .clicks {
+      display: block;
+      height: 100%;
+      width: var(--click-w);
+      background: var(--accent);
+    }
+    #dashboard-clickmap .os-track .uv {
+      display: block;
+      height: 100%;
+      width: var(--uv-w);
+      background: var(--accent2);
+      opacity: .72;
+    }
+    #dashboard-clickmap .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0 0 12px;
+    }
+    #dashboard-clickmap .legend span {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+    }
+    #dashboard-clickmap .legend i {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+      background: var(--accent);
+    }
+    #dashboard-clickmap .legend .uv-dot {
+      background: var(--accent2);
+      opacity: .72;
+    }
+    #dashboard-clickmap .legend .total-dot {
+      background: var(--accent3);
+      opacity: .72;
+    }
+    @media (max-width: 980px) {
+      #dashboard-clickmap { padding: 18px; }
+      #dashboard-clickmap .header,
+      #dashboard-clickmap .stage,
+      #dashboard-clickmap .bottom-grid {
+        display: block;
+      }
+      #dashboard-clickmap .summary {
+        justify-content: flex-start;
+        margin-top: 12px;
+      }
+      #dashboard-clickmap .side-panel {
+        margin-top: 14px;
+      }
+      #dashboard-clickmap .bottom-grid > div + div {
+        margin-top: 18px;
+      }
+      #dashboard-clickmap .os-grid {
+        display: block;
+      }
+      #dashboard-clickmap .os-grid > div + div {
+        margin-top: 18px;
+      }
+      #dashboard-clickmap .trend-head {
+        display: block;
+      }
+      #dashboard-clickmap .trend-kpi {
+        justify-content: flex-start;
+        margin-top: 10px;
+      }
+    }
+    @media (max-width: 560px) {
+      #dashboard-clickmap { padding: 12px; border-radius: 12px; }
+      #dashboard-clickmap h1 { font-size: 21px; }
+      #dashboard-clickmap .screen-wrap { padding: 8px; }
+      #dashboard-clickmap .hotspot .badge { font-size: 10px; padding: 4px 5px; }
+      #dashboard-clickmap .day-row { grid-template-columns: 76px 1fr; gap: 7px; }
+      #dashboard-clickmap .day-row > div:last-child {
+        grid-column: 2;
+        text-align: left;
+      }
+      #dashboard-clickmap .month-status,
+      #dashboard-clickmap .compare-grid { grid-template-columns: 1fr; }
+      #dashboard-clickmap .notification-row { grid-template-columns: 78px 1fr; }
+      #dashboard-clickmap .os-row { grid-template-columns: 68px 1fr; }
+      #dashboard-clickmap .delta {
+        grid-column: 2;
+        text-align: left;
+      }
+      #dashboard-clickmap .os-row .delta {
+        grid-column: 2;
+      }
+      #dashboard-clickmap th,
+      #dashboard-clickmap td { padding: 8px 5px; }
+    }
+  </style>
+
+  <div class="header">
+    <div>
+      <h1>숏폼 스튜디오 대시보드 클릭 영역 분석</h1>
+      <p class="subtitle">케이스별 화면에 클릭 이벤트 핫스팟을 표시했습니다. 각 영역에 마우스를 올리면 연결된 데이터명과 최근 집계 클릭수/순방문자수가 보입니다.</p>
+    </div>
+    <div class="summary" aria-label="요약 지표">
+      <span class="pill">일평균 이벤트 726.5회/일</span>
+      <span class="pill">일평균 방문자수 509.1명/일</span>
+      <span class="pill">기간 합산 5,812회 / 4,073명</span>
+      <span class="pill">기간 2026.08.05-08.12</span>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="화면 케이스 선택">
+    <button class="tab" type="button" role="tab" aria-selected="true" data-case="default">기본</button>
+    <button class="tab" type="button" role="tab" aria-selected="false" data-case="noActivity">활동 없음</button>
+    <button class="tab" type="button" role="tab" aria-selected="false" data-case="stale">활동 오래됨</button>
+  </div>
+
+  <div class="stage">
+    <div class="screen-wrap">
+      <div class="screen-frame" id="screenFrame">
+        <img id="caseImage" src="assets/case-no-activity.png" alt="활동 없음 대시보드 화면">
+      </div>
+    </div>
+    <aside class="side-panel" aria-live="polite">
+      <h2>선택 영역</h2>
+      <div class="selected">
+        <div class="label" id="selectedCase">활동 없음 화면</div>
+        <div class="name" id="selectedName">영역에 호버해보세요</div>
+        <div class="value" id="selectedValue">-</div>
+        <div class="subvalue" id="selectedSubValue">2026.08.05-08.12 기준 일평균 중심</div>
+        <p class="note" id="selectedDesc">화면 위 주황색 영역은 CSV의 action_name과 매핑된 클릭 영역입니다.</p>
+      </div>
+      <h2>일평균 상위 영역</h2>
+      <div class="rank-list" id="rankList"></div>
+    </aside>
+  </div>
+
+  <section class="data-panel">
+    <div class="bottom-grid event-grid">
+      <div>
+        <h2>이벤트별 일평균 데이터</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>데이터명</th>
+              <th>일평균 이벤트/방문자</th>
+            </tr>
+          </thead>
+          <tbody id="dataRows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="notification-trend">
+      <p class="hook-copy">New 배지 확대와 10초 툴팁 안내, 클릭률은 실제로 증가했을까?</p>
+      <p class="one-line-summary">8/5 업데이트 후 전체 웹스튜디오 순방문자수는 659.6명/일에서 598.4명/일로 낮아졌지만, 알림 이벤트수는 369.1회/일에서 458.0회/일로 +24.1% 증가했고 알림 UV 비중도 21.8%에서 32.3%로 +10.5%p 상승했습니다.</p>
+      <div class="trend-head">
+        <div>
+          <h2>알림버튼 6/14-8/12 업데이트 전후 추이</h2>
+          <p class="subtitle">전체 웹스튜디오 순방문자수 대비 알림 순방문자수와 알림 이벤트수를 같은 날짜 축, 같은 Y축 수치 기준으로 비교했습니다.</p>
+        </div>
+        <div class="trend-kpi" aria-label="알림버튼 추이 요약">
+          <span>알림 이벤트 합계 22,856회</span>
+          <span>알림 UV 합계 8,999명</span>
+          <span>알림 UV 비중 +10.5%p</span>
+          <span>알림 이벤트 일평균 +24.1%</span>
+        </div>
+      </div>
+      <div class="compare-grid" aria-label="알림버튼 업데이트 전후 비교">
+        <div class="compare-card">
+          <span class="compare-period">6/14-8/4 기간 일평균</span>
+          <strong>업데이트 전</strong>
+          <span class="compare-caption">업데이트 이전 52일 기준 평균값</span>
+          <span class="big">369.1회/일</span>
+          <span class="big-secondary">알림 UV 비중 21.8%</span>
+          <span>전체 UV 659.6명/일 · 알림 UV 143.4명/일</span>
+        </div>
+        <div class="compare-card">
+          <span class="compare-period">8/5-8/12 기간 일평균</span>
+          <strong>업데이트 후</strong>
+          <span class="compare-caption">업데이트 이후 8일 기준 평균값</span>
+          <span class="big">458.0회/일</span>
+          <span class="big-secondary">알림 UV 비중 32.3%</span>
+          <span>전체 UV 598.4명/일 · 알림 UV 192.5명/일</span>
+        </div>
+        <div class="compare-card">
+          <span class="compare-period">업데이트 후 - 업데이트 전</span>
+          <strong>변화</strong>
+          <span class="compare-caption">두 기간의 일평균 차이</span>
+          <span class="big">+88.9회/일</span>
+          <span class="big-secondary">+10.5%p</span>
+          <span>알림 이벤트 +24.1% · 알림 UV +34.2%</span>
+        </div>
+      </div>
+      <p class="legend" aria-label="범례">
+        <span><i class="total-dot" aria-hidden="true"></i>전체 웹스튜디오 UV</span>
+        <span><i class="uv-dot" aria-hidden="true"></i>알림 UV</span>
+        <span><i aria-hidden="true"></i>알림 이벤트수</span>
+        <span>동일 Y축 기준</span>
+        <span>점선: 8/5 업데이트</span>
+      </p>
+      <div class="notification-chart" id="notificationChart" role="img" aria-label="전체 웹스튜디오 순방문자수 대비 알림 순방문자수와 알림 이벤트수 추이"></div>
+      <div class="os-grid">
+        <div>
+          <h2>APPENDIX · 참고사항: OS별 클릭수/순방문자수</h2>
+          <p class="legend" aria-label="범례">
+            <span><i aria-hidden="true"></i>클릭수</span>
+            <span><i class="uv-dot" aria-hidden="true"></i>순방문자수</span>
+          </p>
+          <div class="os-chart" id="osChart" role="img" aria-label="OS별 알림버튼 클릭수와 순방문자수 비교"></div>
+        </div>
+        <div>
+          <h2>APPENDIX · OS별 상세 데이터</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>OS</th>
+                <th>클릭/순방문</th>
+              </tr>
+            </thead>
+            <tbody id="osRows"></tbody>
+          </table>
+        </div>
+      </div>
+      <p class="note">8/5 업데이트 후 전체 웹스튜디오 UV는 감소했지만 알림 UV 비중은 평균 21.8%에서 32.3%로 +10.5%p 상승했습니다. 각 날짜 포인트에 호버하면 전체 UV, 알림 UV, 알림 이벤트수, 알림 UV 비중을 함께 확인할 수 있습니다.</p>
+    </div>
+  </section>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    (() => {
+      const root = document.getElementById('dashboard-clickmap');
+      const frame = root.querySelector('#screenFrame');
+      const image = root.querySelector('#caseImage');
+      const tooltip = root.querySelector('#tooltip');
+      const selectedCase = root.querySelector('#selectedCase');
+      const selectedName = root.querySelector('#selectedName');
+      const selectedValue = root.querySelector('#selectedValue');
+      const selectedSubValue = root.querySelector('#selectedSubValue');
+      const selectedDesc = root.querySelector('#selectedDesc');
+      const analysisDays = 8;
+
+      const actions = [
+        { key: '알림버튼_클릭', label: '알림 버튼', clicks: 3664, uv: 1540, desc: '상단 우측 알림 아이콘 클릭' },
+        { key: '대시보드탭_클릭', label: '대시보드 탭', clicks: 1660, uv: 676, desc: '좌측 내비게이션의 대시보드 탭 클릭' },
+        { key: '댓글_더보기_클릭', label: '댓글 더보기', clicks: 126, uv: 108, desc: '응답하지 않은 댓글 카드 하단 더보기 버튼 클릭' },
+        { key: '댓글_개별댓글_클릭', label: '개별 댓글', clicks: 89, uv: 58, desc: '응답하지 않은 댓글 목록의 댓글 행 클릭' },
+        { key: '업로드한콘텐츠_클릭', label: '업로드한 콘텐츠', clicks: 87, uv: 67, desc: '활동 요약의 업로드한 콘텐츠 카드 클릭' },
+        { key: '최다조회콘텐츠_더보기_클릭', label: '최다 조회 더보기', clicks: 71, uv: 68, desc: '최다 조회 콘텐츠 카드 하단 더보기 버튼 클릭' },
+        { key: '새로운친구_클릭', label: '새로운 친구', clicks: 55, uv: 53, desc: '활동 요약의 새로운 친구 카드 클릭' },
+        { key: '최신콘텐츠_분석_클릭', label: '최신 콘텐츠 분석', clicks: 18, uv: 16, desc: '최신 콘텐츠 카드의 분석 아이콘 클릭' },
+        { key: '최다조회콘텐츠_개별콘텐츠_클릭', label: '최다 조회 개별 콘텐츠', clicks: 18, uv: 15, desc: '최다 조회 콘텐츠 리스트 내 개별 콘텐츠 클릭' },
+        { key: '최신콘텐츠_댓글_클릭', label: '최신 콘텐츠 댓글', clicks: 13, uv: 10, desc: '최신 콘텐츠 카드의 댓글 아이콘 클릭' },
+        { key: '활동없음상태_업로드_클릭', label: '활동 없음 업로드', clicks: 11, uv: 10, desc: '활동 없음 상태의 업로드 CTA 클릭' },
+        { key: '오랜만방문상태_업로드_클릭', label: '활동 오래됨 업로드', clicks: 0, uv: 0, desc: '활동 오래됨 상태의 업로드 CTA 클릭' },
+        { key: '대시보드_보기', label: '대시보드 보기', clicks: 0, uv: 1452, desc: '대시보드 화면 노출 집계' }
+      ];
+
+      const byKey = Object.fromEntries(actions.map(action => [action.key, action]));
+      const cases = {
+        noActivity: {
+          label: '활동 없음 화면',
+          image: 'assets/case-no-activity.png',
+          alt: '활동 없음 대시보드 화면',
+          spots: [
+            ['대시보드탭_클릭', 1.2, 31.1, 19.4, 3.8],
+            ['알림버튼_클릭', 92.0, 10.2, 2.6, 2.4],
+            ['활동없음상태_업로드_클릭', 40.2, 41.9, 18.5, 7.0],
+            ['업로드한콘텐츠_클릭', 63.4, 26.9, 14.4, 7.2],
+            ['새로운친구_클릭', 79.0, 26.9, 14.6, 7.2],
+            ['댓글_더보기_클릭', 63.4, 56.3, 30.2, 3.1],
+            ['최다조회콘텐츠_더보기_클릭', 63.4, 81.0, 30.2, 3.1]
+          ]
+        },
+        stale: {
+          label: '활동 오래됨 화면',
+          image: 'assets/case-stale.png',
+          alt: '활동 오래됨 대시보드 화면',
+          spots: [
+            ['대시보드탭_클릭', 1.2, 31.1, 19.4, 3.8],
+            ['알림버튼_클릭', 92.0, 10.2, 2.6, 2.4],
+            ['오랜만방문상태_업로드_클릭', 40.2, 42.5, 18.5, 6.6],
+            ['업로드한콘텐츠_클릭', 63.4, 26.9, 14.4, 7.2],
+            ['새로운친구_클릭', 79.0, 26.9, 14.6, 7.2],
+            ['댓글_더보기_클릭', 63.4, 56.3, 30.2, 3.1],
+            ['최다조회콘텐츠_더보기_클릭', 63.4, 81.0, 30.2, 3.1]
+          ]
+        },
+        default: {
+          label: '기본 화면',
+          image: 'assets/case-default.png',
+          alt: '기본 대시보드 화면',
+          spots: [
+            ['대시보드탭_클릭', 1.2, 27.2, 19.4, 2.9],
+            ['알림버튼_클릭', 92.0, 8.9, 2.6, 2.3],
+            ['업로드한콘텐츠_클릭', 63.4, 23.8, 14.4, 6.8],
+            ['새로운친구_클릭', 78.9, 23.8, 14.6, 6.8],
+            ['최신콘텐츠_분석_클릭', 51.0, 38.9, 3.0, 3.0],
+            ['최신콘텐츠_댓글_클릭', 54.3, 38.9, 3.0, 3.0],
+            ['댓글_개별댓글_클릭', 63.4, 36.8, 30.2, 16.6],
+            ['댓글_더보기_클릭', 63.4, 55.7, 30.2, 2.4],
+            ['최다조회콘텐츠_개별콘텐츠_클릭', 63.4, 64.0, 30.2, 17.6],
+            ['최다조회콘텐츠_더보기_클릭', 63.4, 83.4, 30.2, 2.4]
+          ]
+        }
+      };
+
+      const notificationDaily = [
+        ['2026.06.14', 506, 117, 335, 23.1],
+        ['2026.06.15', 730, 172, 398, 23.6],
+        ['2026.06.16', 699, 147, 374, 21.0],
+        ['2026.06.17', 685, 139, 623, 20.3],
+        ['2026.06.18', 668, 142, 351, 21.3],
+        ['2026.06.19', 646, 134, 299, 20.7],
+        ['2026.06.20', 481, 105, 210, 21.8],
+        ['2026.06.21', 448, 116, 221, 25.9],
+        ['2026.06.22', 711, 143, 392, 20.1],
+        ['2026.06.23', 730, 164, 362, 22.5],
+        ['2026.06.24', 733, 154, 419, 21.0],
+        ['2026.06.25', 738, 162, 390, 22.0],
+        ['2026.06.26', 731, 143, 314, 19.6],
+        ['2026.06.27', 485, 115, 287, 23.7],
+        ['2026.06.28', 515, 112, 327, 21.7],
+        ['2026.06.29', 723, 155, 406, 21.4],
+        ['2026.06.30', 852, 173, 487, 20.3],
+        ['2026.07.01', 776, 182, 477, 23.5],
+        ['2026.07.02', 660, 151, 401, 22.9],
+        ['2026.07.03', 657, 145, 457, 22.1],
+        ['2026.07.04', 488, 109, 311, 22.3],
+        ['2026.07.05', 502, 113, 346, 22.5],
+        ['2026.07.06', 651, 146, 423, 22.4],
+        ['2026.07.07', 720, 164, 460, 22.8],
+        ['2026.07.08', 707, 159, 462, 22.5],
+        ['2026.07.09', 699, 145, 436, 20.7],
+        ['2026.07.10', 630, 129, 388, 20.5],
+        ['2026.07.11', 473, 105, 259, 22.2],
+        ['2026.07.12', 465, 104, 300, 22.4],
+        ['2026.07.13', 702, 139, 381, 19.8],
+        ['2026.07.14', 783, 173, 407, 22.1],
+        ['2026.07.15', 738, 148, 377, 20.1],
+        ['2026.07.16', 702, 149, 307, 21.2],
+        ['2026.07.17', 569, 110, 300, 19.3],
+        ['2026.07.18', 480, 107, 314, 22.3],
+        ['2026.07.19', 494, 111, 277, 22.5],
+        ['2026.07.20', 731, 155, 332, 21.2],
+        ['2026.07.21', 750, 154, 360, 20.5],
+        ['2026.07.22', 753, 183, 451, 24.3],
+        ['2026.07.23', 766, 162, 363, 21.1],
+        ['2026.07.24', 866, 188, 450, 21.7],
+        ['2026.07.25', 533, 113, 226, 21.2],
+        ['2026.07.26', 572, 128, 290, 22.4],
+        ['2026.07.27', 791, 177, 411, 22.4],
+        ['2026.07.28', 854, 179, 370, 21.0],
+        ['2026.07.29', 783, 167, 398, 21.3],
+        ['2026.07.30', 834, 193, 503, 23.1],
+        ['2026.07.31', 816, 177, 420, 21.7],
+        ['2026.08.01', 488, 120, 309, 24.6],
+        ['2026.08.02', 475, 95, 253, 20.0],
+        ['2026.08.03', 665, 135, 380, 20.3],
+        ['2026.08.04', 645, 151, 398, 23.4],
+        ['2026.08.05', 620, 195, 513, 31.5],
+        ['2026.08.06', 621, 223, 509, 35.9],
+        ['2026.08.07', 660, 204, 541, 30.9],
+        ['2026.08.08', 485, 170, 384, 35.1],
+        ['2026.08.09', 495, 162, 342, 32.7],
+        ['2026.08.10', 621, 186, 456, 30.0],
+        ['2026.08.11', 642, 203, 484, 31.6],
+        ['2026.08.12', 643, 197, 435, 30.6]
+      ];
+
+      const osTotals = [
+        ['Windows', 832, 356],
+        ['iOS', 582, 263],
+        ['macOS', 373, 161],
+        ['Android', 312, 132],
+        ['Linux', 2, 2]
+      ];
+
+      function format(value) {
+        return value.toLocaleString('ko-KR');
+      }
+
+      function avg(value) {
+        return value / analysisDays;
+      }
+
+      function formatAvg(value) {
+        return avg(value).toLocaleString('ko-KR', { maximumFractionDigits: 1 });
+      }
+
+      function setSelected(action, caseLabel) {
+        selectedCase.textContent = caseLabel;
+        selectedName.textContent = action.label;
+        selectedValue.textContent = `${formatAvg(action.clicks)}회/일`;
+        selectedSubValue.textContent = `일평균 방문자수 ${formatAvg(action.uv)}명/일 · 기간 합산 ${format(action.clicks)}회 / ${format(action.uv)}명`;
+        selectedDesc.textContent = `${action.key} · ${action.desc}`;
+      }
+
+      function moveTooltip(target, action) {
+        const rect = target.getBoundingClientRect();
+        tooltip.innerHTML = `<strong>${action.label}</strong>${action.key}<br>일평균 이벤트수 ${formatAvg(action.clicks)}회/일<br>일평균 방문자수 ${formatAvg(action.uv)}명/일<br>기간 합산 ${format(action.clicks)}회 · ${format(action.uv)}명`;
+        tooltip.classList.add('is-visible');
+        const tipRect = tooltip.getBoundingClientRect();
+        const left = Math.min(window.innerWidth - tipRect.width - 12, Math.max(12, rect.left + rect.width / 2 - tipRect.width / 2));
+        const top = Math.max(12, rect.top - tipRect.height - 10);
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      }
+
+      function hideTooltip() {
+        tooltip.classList.remove('is-visible');
+      }
+
+      function renderCase(caseKey) {
+        const view = cases[caseKey];
+        image.src = view.image;
+        image.alt = view.alt;
+        selectedCase.textContent = view.label;
+        selectedName.textContent = '영역에 호버해보세요';
+        selectedValue.textContent = '-';
+        selectedSubValue.textContent = '2026.08.05-08.12 기준 일평균 중심';
+        selectedDesc.textContent = '화면 위 주황색 영역은 CSV의 action_name과 매핑된 클릭 영역입니다.';
+        frame.querySelectorAll('.hotspot').forEach(node => node.remove());
+
+        view.spots.forEach(([key, left, top, width, height]) => {
+          const action = byKey[key];
+          const spot = document.createElement('button');
+          spot.type = 'button';
+          spot.className = 'hotspot';
+          spot.style.left = `${left}%`;
+          spot.style.top = `${top}%`;
+          spot.style.width = `${width}%`;
+          spot.style.height = `${height}%`;
+          spot.setAttribute('aria-label', `${action.label}, 일평균 이벤트 ${formatAvg(action.clicks)}회, 일평균 방문자 ${formatAvg(action.uv)}명`);
+          spot.innerHTML = `<span class="badge">${formatAvg(action.clicks)}/일</span>`;
+          spot.addEventListener('mouseenter', () => {
+            root.querySelectorAll('.hotspot').forEach(node => node.classList.remove('is-active'));
+            spot.classList.add('is-active');
+            setSelected(action, view.label);
+            moveTooltip(spot, action);
+          });
+          spot.addEventListener('focus', () => {
+            spot.classList.add('is-active');
+            setSelected(action, view.label);
+            moveTooltip(spot, action);
+          });
+          spot.addEventListener('mouseleave', () => {
+            spot.classList.remove('is-active');
+            hideTooltip();
+          });
+          spot.addEventListener('blur', () => {
+            spot.classList.remove('is-active');
+            hideTooltip();
+          });
+          frame.appendChild(spot);
+        });
+      }
+
+      function renderRank() {
+        const max = Math.max(...actions.map(action => action.clicks));
+        root.querySelector('#rankList').innerHTML = actions
+          .filter(action => action.clicks > 0)
+          .slice()
+          .sort((a, b) => b.clicks - a.clicks)
+          .slice(0, 7)
+          .map(action => `
+            <div class="rank-item">
+              <div class="rank-name">${action.label}</div>
+              <div class="rank-value">${formatAvg(action.clicks)}회/일 · ${formatAvg(action.uv)}명/일</div>
+              <div class="rank-total">기간 합산 ${format(action.clicks)}회 / ${format(action.uv)}명</div>
+              <div class="bar" aria-hidden="true"><span style="--w:${Math.max(3, action.clicks / max * 100)}%"></span></div>
+            </div>
+          `).join('');
+      }
+
+      function renderData() {
+        root.querySelector('#dataRows').innerHTML = actions
+          .slice()
+          .sort((a, b) => b.clicks - a.clicks)
+          .map(action => `<tr><td>${action.key}</td><td>${formatAvg(action.clicks)}회/일 · ${formatAvg(action.uv)}명/일<br><span class="text-muted">기간 합산 ${format(action.clicks)}회 / ${format(action.uv)}명</span></td></tr>`)
+          .join('');
+
+        const chartWidth = 920;
+        const chartHeight = 320;
+        const margin = { top: 24, right: 28, bottom: 46, left: 54 };
+        const plotWidth = chartWidth - margin.left - margin.right;
+        const plotHeight = chartHeight - margin.top - margin.bottom;
+        const maxValue = Math.ceil(Math.max(...notificationDaily.flatMap(([, totalUv, notifUv, notifEvent]) => [totalUv, notifUv, notifEvent])) / 100) * 100;
+        const x = index => margin.left + (index / (notificationDaily.length - 1)) * plotWidth;
+        const y = value => margin.top + plotHeight - (value / maxValue) * plotHeight;
+        const linePath = (index, mapper) => notificationDaily.map((row, pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${x(pointIndex).toFixed(1)} ${mapper(row[index]).toFixed(1)}`).join(' ');
+        const updateIndex = notificationDaily.findIndex(([date]) => date === '2026.08.05');
+        const updateX = x(updateIndex);
+        const ticks = [0, Math.round(maxValue / 2), maxValue];
+        const monthLabels = [
+          ['6/14', 0],
+          ['7/1', notificationDaily.findIndex(([date]) => date === '2026.07.01')],
+          ['8/1', notificationDaily.findIndex(([date]) => date === '2026.08.01')],
+          ['8/12', notificationDaily.length - 1]
+        ];
+        const postRows = notificationDaily.slice(updateIndex);
+        const preRows = notificationDaily.slice(0, updateIndex);
+        const preShare = preRows.reduce((sum, [, , , , share]) => sum + share, 0) / preRows.length;
+        const postShare = postRows.reduce((sum, [, , , , share]) => sum + share, 0) / postRows.length;
+        root.querySelector('#notificationChart').innerHTML = `
+          <svg class="trend-svg" viewBox="0 0 ${chartWidth} ${chartHeight}" role="img" aria-label="6월 14일부터 8월 12일까지 전체 웹스튜디오 순방문자수, 알림 순방문자수, 알림 이벤트수 추이. 8월 5일 이후 알림 순방문자 비중이 10.5퍼센트포인트 증가했습니다.">
+            <line class="trend-axis" x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}"></line>
+            ${ticks.map(value => `
+              <line class="trend-grid" x1="${margin.left}" y1="${y(value).toFixed(1)}" x2="${margin.left + plotWidth}" y2="${y(value).toFixed(1)}"></line>
+              <text class="trend-tick" x="${margin.left - 10}" y="${y(value).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${format(value)}</text>
+            `).join('')}
+            <line class="trend-update" x1="${updateX.toFixed(1)}" y1="${margin.top}" x2="${updateX.toFixed(1)}" y2="${margin.top + plotHeight}"></line>
+            <text class="trend-label" x="${(updateX + 8).toFixed(1)}" y="${margin.top + 12}">8/5 업데이트</text>
+            <text class="trend-label" x="${margin.left + 8}" y="${margin.top + 20}">이전 알림 UV 비중 평균 ${preShare.toFixed(1)}%</text>
+            <text class="trend-label" x="${(updateX + 8).toFixed(1)}" y="${margin.top + 36}">이후 평균 ${postShare.toFixed(1)}%</text>
+            <path class="trend-line-total" d="${linePath(1, y)}"></path>
+            <path class="trend-line-uv" d="${linePath(2, y)}"></path>
+            <path class="trend-line-clicks" d="${linePath(3, y)}"></path>
+            ${notificationDaily.map(([date, totalUv, notifUv, notifEvent, share], index) => {
+              const bandWidth = plotWidth / (notificationDaily.length - 1);
+              const bandX = Math.max(margin.left, x(index) - bandWidth / 2);
+              const width = index === 0 || index === notificationDaily.length - 1 ? bandWidth / 2 : bandWidth;
+              return `<rect class="trend-hit" x="${bandX.toFixed(1)}" y="${margin.top}" width="${width.toFixed(1)}" height="${plotHeight}" data-date="${date}" data-total-uv="${totalUv}" data-notif-uv="${notifUv}" data-notif-event="${notifEvent}" data-share="${share}"></rect>`;
+            }).join('')}
+            ${monthLabels.map(([label, index]) => `<text class="trend-tick" x="${x(index).toFixed(1)}" y="${chartHeight - 14}" text-anchor="middle">${label}</text>`).join('')}
+          </svg>
+        `;
+        root.querySelectorAll('.trend-hit').forEach(point => {
+          point.addEventListener('mouseenter', () => {
+            const rect = point.getBoundingClientRect();
+            tooltip.innerHTML = `<strong>${point.dataset.date}</strong><div class="tooltip-row"><span class="tooltip-dot total"></span><span>전체 웹스튜디오 UV ${format(Number(point.dataset.totalUv))}명</span></div><div class="tooltip-row"><span class="tooltip-dot uv"></span><span>알림 UV ${format(Number(point.dataset.notifUv))}명 · 비중 ${point.dataset.share}%</span></div><div class="tooltip-row"><span class="tooltip-dot event"></span><span>알림 이벤트수 ${format(Number(point.dataset.notifEvent))}회</span></div>`;
+            tooltip.classList.add('is-visible');
+            const tipRect = tooltip.getBoundingClientRect();
+            tooltip.style.left = `${Math.min(window.innerWidth - tipRect.width - 12, Math.max(12, rect.left + rect.width / 2 - tipRect.width / 2))}px`;
+            tooltip.style.top = `${Math.max(12, rect.top - tipRect.height - 10)}px`;
+          });
+          point.addEventListener('mouseleave', hideTooltip);
+        });
+
+        const maxOsClicks = Math.max(...osTotals.map(([, clicks]) => clicks));
+        const maxOsUv = Math.max(...osTotals.map(([, , uv]) => uv));
+        root.querySelector('#osChart').innerHTML = osTotals.map(([os, clicks, uv]) => `
+          <div class="os-row">
+            <div>${os}</div>
+            <div class="os-track" aria-hidden="true">
+              <span class="clicks" style="--click-w:${Math.max(2, clicks / maxOsClicks * 70)}%"></span>
+              <span class="uv" style="--uv-w:${Math.max(2, uv / maxOsUv * 30)}%"></span>
+            </div>
+            <div class="delta">${format(clicks)}회 / ${format(uv)}명</div>
+          </div>
+        `).join('');
+
+        root.querySelector('#osRows').innerHTML = osTotals.map(([os, clicks, uv]) => `
+          <tr>
+            <td>${os}</td>
+            <td>${format(clicks)}회 / ${format(uv)}명</td>
+          </tr>
+        `).join('');
+      }
+
+      root.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          root.querySelectorAll('.tab').forEach(node => node.setAttribute('aria-selected', 'false'));
+          tab.setAttribute('aria-selected', 'true');
+          renderCase(tab.dataset.case);
+        });
+      });
+
+      renderRank();
+      renderData();
+      renderCase('default');
+    })();
+  </script>
+</div>
+</body>
+</html>
